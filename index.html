@@ -88,6 +88,10 @@
     <table id="rTabla"></table>
     <div class="tot" style="margin-top:8px">Total ciclo: <b id="rTotal"></b></div>
   </div>
+  <div class="card" id="boxGramos" hidden>
+    <label for="gramos">Gramos de contrapesos usados (total de la rueda)</label>
+    <input id="gramos" type="number" inputmode="numeric" min="0" step="1" placeholder="Ej: 60">
+  </div>
   <button class="btn ok" id="btnGuardar">Guardar y enviar</button>
   <button class="btn gris" id="btnDescartar">Descartar</button>
   <div id="rMsg"></div>
@@ -126,7 +130,7 @@ const SERVICIOS = {
     ['Medición final e impresión','M'],
     ['Retirar sensores y bajar vehículo','O']
   ]},
-  balanceo: { nombre:'Balanceo (por rueda)', subtareas:[
+  balanceo: { nombre:'Balanceo (por rueda)', gramos:true, subtareas:[
     ['Desmontar rueda del vehículo','O'],
     ['Limpiar y retirar contrapesos viejos','O'],
     ['Montar en balanceadora y cargar medidas','O'],
@@ -268,6 +272,8 @@ function mostrarResumen(){
     `<tr><td>${k+1}. ${esc(n)} <span class="badge ${t}">${t==='O'?'Op':'Máq'}</span></td><td>${fmt(S.laps[k])}</td></tr>`).join('');
   $('rTotal').textContent = fmt(S.laps.reduce((a,b) => a+b, 0));
   $('rMsg').innerHTML = '';
+  $('boxGramos').hidden = !S.srv.gramos;
+  $('gramos').value = '';
   $('btnGuardar').disabled = false;
   ver('vRes');
 }
@@ -285,11 +291,13 @@ function armarPayload(){
     hora: d.toTimeString().slice(0,5),
     sucursal: S.sucursal, operario: S.operario,
     servicio: S.srv.nombre, vehiculo: S.vehiculo,
+    gramos: S.srv.gramos ? Number($('gramos').value) : null,
     subtareas: S.srv.subtareas.map(([nombre,tipo], k) => ({ n: k+1, nombre, tipo, seg: r1(S.laps[k]) }))
   };
 }
 
 $('btnGuardar').onclick = async () => {
+  if (S.srv.gramos && $('gramos').value === ''){ alert('Cargá los gramos de contrapesos (poné 0 si no usó).'); return; }
   $('btnGuardar').disabled = true;
   const p = armarPayload();
   const c = ls.get('tt_cont', {}); const k = S.srvKey + '|' + S.vehiculo; c[k] = (c[k]||0) + 1; ls.set('tt_cont', c);
