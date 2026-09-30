@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f3d5e">
+<title>Tiempos de taller</title>
+<style>
+  :root{--az:#0f3d5e;--az2:#1b6ca8;--ok:#1f8a4c;--warn:#d98a00;--mal:#c0392b;--bg:#f2f5f8;--tx:#1c2733;--mut:#6b7a89;--bd:#d5dde5}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--tx);padding-bottom:env(safe-area-inset-bottom)}
+  header{background:var(--az);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+  header h1{font-size:17px;margin:0}
+  header small{opacity:.8;display:block;font-size:12px}
+  header button{background:transparent;border:1px solid #ffffff66;color:#fff;border-radius:8px;padding:6px 10px;font-size:16px}
+  main{max-width:520px;margin:0 auto;padding:14px}
+  section[hidden]{display:none}
+  .card{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+  label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+  select,input{width:100%;font-size:17px;padding:12px;border:1px solid var(--bd);border-radius:10px;background:#fff;color:var(--tx)}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  button.btn{width:100%;font-size:19px;font-weight:600;padding:16px;border:0;border-radius:14px;color:#fff;background:var(--az2);margin-top:12px}
+  button.btn.ok{background:var(--ok)}button.btn.warn{background:var(--warn)}button.btn.mal{background:var(--mal)}button.btn.gris{background:#8a97a4}
+  button.btn:disabled{opacity:.4}
+  .big{font-size:56px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0}
+  .paso{font-size:13px;color:var(--mut);text-align:center}
+  .nombre{font-size:22px;font-weight:700;text-align:center;margin:6px 0}
+  .badge{display:inline-block;font-size:12px;padding:3px 10px;border-radius:99px;color:#fff}
+  .badge.O{background:var(--az2)}.badge.M{background:#7b4fb0}
+  .tot{text-align:center;color:var(--mut);font-size:15px}
+  ul.laps{list-style:none;margin:10px 0 0;padding:0;font-size:14px}
+  ul.laps li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td{padding:6px 4px;border-bottom:1px solid var(--bd);text-align:left}
+  td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+  .msg{padding:10px 12px;border-radius:10px;font-size:14px;margin-top:10px}
+  .msg.ok{background:#e4f5ea;color:#14663a}.msg.err{background:#fbe6e3;color:#8f2a1f}.msg.inf{background:#e6f0f9;color:#124a75}
+  .pausado .big{color:var(--warn)}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Tiempos de taller</h1><small id="sub">Top Neumáticos</small></div>
+  <button id="btnCfg" aria-label="Configuración">⚙</button>
+</header>
+<main>
+
+<!-- ========== SETUP ========== -->
+<section id="vSetup">
+  <div class="card">
+    <label>Sucursal</label>
+    <select id="sucursal"></select>
+    <label>Operario medido</label>
+    <input id="operario" list="dlOper" placeholder="Nombre del operario" autocomplete="off">
+    <datalist id="dlOper"></datalist>
+    <label>Servicio</label>
+    <select id="servicio"></select>
+    <label>Tipo de vehículo</label>
+    <select id="vehiculo"></select>
+    <div id="contInfo" class="msg inf"></div>
+  </div>
+  <button class="btn" id="btnPrep">Preparar cronómetro</button>
+  <div id="pendInfo"></div>
+</section>
+
+<!-- ========== CRONOMETRO ========== -->
+<section id="vCron" hidden>
+  <div class="card" id="cardCron">
+    <div class="paso" id="cPaso"></div>
+    <div class="nombre" id="cNombre"></div>
+    <div style="text-align:center"><span class="badge" id="cTipo"></span></div>
+    <div class="big" id="cTiempo">00:00.0</div>
+    <div class="tot">Ciclo total: <b id="cTotal">00:00.0</b></div>
+    <ul class="laps" id="cLaps"></ul>
+  </div>
+  <button class="btn ok" id="btnMain">▶ INICIAR</button>
+  <div class="row">
+    <button class="btn warn" id="btnPausa" disabled>⏸ Pausa</button>
+    <button class="btn gris" id="btnUndo" disabled>↶ Deshacer</button>
+  </div>
+  <button class="btn mal" id="btnCancel">Cancelar ciclo</button>
+</section>
+
+<!-- ========== RESUMEN ========== -->
+<section id="vRes" hidden>
+  <div class="card">
+    <div class="nombre" id="rTitulo"></div>
+    <table id="rTabla"></table>
+    <div class="tot" style="margin-top:8px">Total ciclo: <b id="rTotal"></b></div>
+  </div>
+  <button class="btn ok" id="btnGuardar">Guardar y enviar</button>
+  <button class="btn gris" id="btnDescartar">Descartar</button>
+  <div id="rMsg"></div>
+</section>
+
+<!-- ========== CONFIG ========== -->
+<section id="vCfg" hidden>
+  <div class="card">
+    <label>Clave de acceso (se pide una sola vez)</label>
+    <input id="cfgKey" type="password" autocomplete="off" placeholder="Header Auth del webhook">
+    <label style="display:flex;gap:8px;align-items:center;color:var(--tx)"><input id="cfgRec" type="checkbox" style="width:auto"> Recordar clave en este navegador</label>
+  </div>
+  <button class="btn" id="btnCfgOk">Guardar</button>
+  <button class="btn gris" id="btnReenviar">Reenviar pendientes (<span id="nPend">0</span>)</button>
+  <button class="btn gris" id="btnCfgVolver">Volver</button>
+  <div id="cfgMsg"></div>
+</section>
+
+</main>
+
+<script>
+/* ============ CONFIGURACIÓN EDITABLE ============ */
+const WEBHOOK_URL = 'https://envy-recollect-last.ngrok-free.dev/webhook/tiempos-taller';
+const HEADER_KEY  = 'x-tiempos-key';   // mismo nombre que el Header Auth del webhook en n8n
+const SUCURSALES  = ['El Dorado','Ctes 1','Ctes 2','Obera','Posadas'];
+const VEHICULOS   = ['Auto','Camioneta / SUV','Camión liviano','Camión / TBR'];
+const OBJETIVO_OBS = '10-20';
+// tipo: 'O' = tiempo operario, 'M' = tiempo máquina
+const SERVICIOS = {
+  alineacion: { nombre:'Alineación', subtareas:[
+    ['Posicionar vehículo en elevador','O'],
+    ['Colocar sensores / garras','O'],
+    ['Compensación (runout)','O'],
+    ['Medición inicial','M'],
+    ['Ajuste de convergencia / caída','O'],
+    ['Medición final e impresión','M'],
+    ['Retirar sensores y bajar vehículo','O']
+  ]},
+  balanceo: { nombre:'Balanceo (por rueda)', subtareas:[
+    ['Desmontar rueda del vehículo','O'],
+    ['Limpiar y retirar contrapesos viejos','O'],
+    ['Montar en balanceadora y cargar medidas','O'],
+    ['Giro y medición','M'],
+    ['Colocar contrapesos','O'],
+    ['Giro de verificación','M'],
+    ['Desmontar y montar en vehículo','O']
+  ]}
+};
+/* ================================================= */
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+const fmt = ms => {
+  const t = Math.max(0, ms)/1000, m = Math.floor(t/60), s = t - m*60;
+  return String(m).padStart(2,'0') + ':' + s.toFixed(1).padStart(4,'0');
+};
+
+let clave = ls.get('tt_key', '') || '';
+let S = null;          // estado del ciclo en curso
+let tick = null;
+let wake = null;
+
+/* ---------- vistas ---------- */
+function ver(id){
+  ['vSetup','vCron','vRes','vCfg'].forEach(v => $(v).hidden = (v !== id));
+  window.scrollTo(0,0);
+}
+
+/* ---------- setup ---------- */
+function llenar(sel, arr, val){
+  $(sel).innerHTML = arr.map(x => {
+    const [v,t] = Array.isArray(x) ? x : [x,x];
+    return `<option value="${esc(v)}">${esc(t)}</option>`;
+  }).join('');
+  if (val) $(sel).value = val;
+}
+function initSetup(){
+  llenar('sucursal', SUCURSALES, ls.get('tt_suc'));
+  llenar('servicio', Object.entries(SERVICIOS).map(([k,v]) => [k, v.nombre]), ls.get('tt_srv'));
+  llenar('vehiculo', VEHICULOS, ls.get('tt_veh'));
+  $('operario').value = ls.get('tt_oper_ult', '');
+  $('dlOper').innerHTML = ls.get('tt_opers', []).map(o => `<option value="${esc(o)}">`).join('');
+  actualizarCont();
+  actualizarPend();
+}
+function actualizarCont(){
+  const c = ls.get('tt_cont', {});
+  const k = $('servicio').value + '|' + $('vehiculo').value;
+  $('contInfo').textContent = `Ciclos cargados en este celular para ${SERVICIOS[$('servicio').value].nombre} / ${$('vehiculo').value}: ${c[k]||0} (objetivo ${OBJETIVO_OBS})`;
+}
+['servicio','vehiculo'].forEach(id => $(id).addEventListener('change', actualizarCont));
+
+$('btnPrep').onclick = () => {
+  const operario = $('operario').value.trim();
+  if (!operario){ alert('Completá el operario.'); return; }
+  ls.set('tt_suc', $('sucursal').value); ls.set('tt_srv', $('servicio').value);
+  ls.set('tt_veh', $('vehiculo').value); ls.set('tt_oper_ult', operario);
+  const ops = ls.get('tt_opers', []);
+  if (!ops.includes(operario)){ ops.push(operario); ls.set('tt_opers', ops); }
+  S = {
+    srvKey: $('servicio').value, srv: SERVICIOS[$('servicio').value],
+    sucursal: $('sucursal').value, operario, vehiculo: $('vehiculo').value,
+    i: 0, laps: [], acc: 0, segStart: 0, paused: false, running: false, inicio: null
+  };
+  ver('vCron'); pintarCron();
+};
+
+/* ---------- cronómetro ---------- */
+const now = () => performance.now();
+const curMs = () => S.running ? S.acc + (S.paused ? 0 : now() - S.segStart) : 0;
+
+function pintarCron(){
+  const n = S.srv.subtareas.length;
+  const [nom, tipo] = S.srv.subtareas[Math.min(S.i, n-1)];
+  $('sub').textContent = `${S.srv.nombre} · ${S.operario}`;
+  $('cPaso').textContent = S.running ? `Subtarea ${S.i+1} de ${n}` : `${n} subtareas`;
+  $('cNombre').textContent = S.running ? nom : `${S.srv.nombre} — ${S.vehiculo}`;
+  $('cTipo').textContent = S.running ? (tipo==='O' ? 'Operario' : 'Máquina') : '';
+  $('cTipo').className = 'badge ' + (S.running ? tipo : '');
+  $('cTipo').style.display = S.running ? '' : 'none';
+  $('btnMain').textContent = !S.running ? '▶ INICIAR CICLO' : (S.i === n-1 ? '✔ FINALIZAR' : 'SIGUIENTE ▶');
+  $('btnMain').disabled = S.paused;
+  $('btnPausa').disabled = !S.running;
+  $('btnPausa').textContent = S.paused ? '▶ Reanudar' : '⏸ Pausa';
+  $('btnUndo').disabled = !S.running || S.i === 0;
+  $('cardCron').classList.toggle('pausado', S.paused);
+  $('cLaps').innerHTML = S.laps.map((ms,k) =>
+    `<li><span>${k+1}. ${esc(S.srv.subtareas[k][0])}</span><b>${fmt(ms)}</b></li>`).join('');
+  pintarTiempos();
+}
+function pintarTiempos(){
+  if (!S) return;
+  $('cTiempo').textContent = fmt(curMs());
+  $('cTotal').textContent = fmt(S.laps.reduce((a,b) => a+b, 0) + curMs());
+}
+async function pedirWake(){ try{ if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); }catch(e){} }
+function soltarWake(){ try{ if (wake){ wake.release(); wake = null; } }catch(e){} }
+function vibrar(){ try{ navigator.vibrate && navigator.vibrate(40); }catch(e){} }
+
+$('btnMain').onclick = () => {
+  vibrar();
+  if (!S.running){
+    S.running = true; S.inicio = new Date(); S.segStart = now(); S.acc = 0;
+    tick = setInterval(pintarTiempos, 100); pedirWake();
+    pintarCron(); return;
+  }
+  S.laps.push(curMs()); S.acc = 0; S.segStart = now(); S.i++;
+  if (S.i >= S.srv.subtareas.length){ clearInterval(tick); soltarWake(); mostrarResumen(); return; }
+  pintarCron();
+};
+// La pausa NO suma al tiempo de la subtarea (sirve para interrupciones ajenas al trabajo)
+$('btnPausa').onclick = () => {
+  vibrar();
+  if (!S.paused){ S.acc += now() - S.segStart; S.paused = true; }
+  else { S.paused = false; S.segStart = now(); }
+  pintarCron();
+};
+$('btnUndo').onclick = () => {
+  if (S.i === 0 || S.paused) return;
+  const prev = S.laps.pop(); const actual = curMs();
+  S.i--; S.acc = prev + actual; S.segStart = now();
+  pintarCron();
+};
+$('btnCancel').onclick = () => {
+  if (S.running && !confirm('¿Cancelar el ciclo? Se pierden los tiempos tomados.')) return;
+  clearInterval(tick); soltarWake(); S = null; $('sub').textContent = 'Top Neumáticos'; ver('vSetup');
+};
+
+/* ---------- resumen ---------- */
+function mostrarResumen(){
+  $('rTitulo').textContent = `${S.srv.nombre} — ${S.vehiculo}`;
+  $('rTabla').innerHTML = S.srv.subtareas.map(([n,t], k) =>
+    `<tr><td>${k+1}. ${esc(n)} <span class="badge ${t}">${t==='O'?'Op':'Máq'}</span></td><td>${fmt(S.laps[k])}</td></tr>`).join('');
+  $('rTotal').textContent = fmt(S.laps.reduce((a,b) => a+b, 0));
+  $('rMsg').innerHTML = '';
+  $('btnGuardar').disabled = false;
+  ver('vRes');
+}
+$('btnDescartar').onclick = () => {
+  if (!confirm('¿Descartar este ciclo?')) return;
+  S = null; $('sub').textContent = 'Top Neumáticos'; ver('vSetup');
+};
+
+function armarPayload(){
+  const d = S.inicio;
+  const r1 = ms => Math.round(ms/100)/10;
+  return {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    fecha: d.toLocaleDateString('sv-SE'),
+    hora: d.toTimeString().slice(0,5),
+    sucursal: S.sucursal, operario: S.operario,
+    servicio: S.srv.nombre, vehiculo: S.vehiculo,
+    subtareas: S.srv.subtareas.map(([nombre,tipo], k) => ({ n: k+1, nombre, tipo, seg: r1(S.laps[k]) }))
+  };
+}
+
+$('btnGuardar').onclick = async () => {
+  $('btnGuardar').disabled = true;
+  const p = armarPayload();
+  const c = ls.get('tt_cont', {}); const k = S.srvKey + '|' + S.vehiculo; c[k] = (c[k]||0) + 1; ls.set('tt_cont', c);
+  let ok = false;
+  try { await enviar(p); ok = true; } catch(e){ encolar(p); }
+  $('rMsg').innerHTML = ok
+    ? '<div class="msg ok">✔ Enviado a la planilla.</div>'
+    : '<div class="msg err">Sin conexión o clave inválida: quedó guardado en el celular como pendiente (⚙ → Reenviar).</div>';
+  setTimeout(() => { S = null; $('sub').textContent = 'Top Neumáticos'; actualizarCont(); actualizarPend(); ver('vSetup'); }, ok ? 900 : 2200);
+};
+
+/* ---------- envío / cola offline ---------- */
+async function enviar(payload){
+  if (!clave) throw new Error('Falta la clave (⚙)');
+  const r = await fetch(WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', [HEADER_KEY]: clave, 'ngrok-skip-browser-warning':'true' },
+    body: JSON.stringify(payload)
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+}
+function encolar(p){ const q = ls.get('tt_cola', []); q.push(p); ls.set('tt_cola', q); }
+function actualizarPend(){
+  const n = ls.get('tt_cola', []).length;
+  $('nPend').textContent = n;
+  $('pendInfo').innerHTML = n ? `<div class="msg err">Hay ${n} ciclo(s) pendientes de envío. ⚙ → Reenviar.</div>` : '';
+}
+async function reenviar(){
+  const q = ls.get('tt_cola', []); const quedan = [];
+  for (const p of q){ try{ await enviar(p); }catch(e){ quedan.push(p); } }
+  ls.set('tt_cola', quedan); actualizarPend();
+  return { enviados: q.length - quedan.length, quedan: quedan.length };
+}
+window.addEventListener('online', () => { if (clave) reenviar(); });
+
+/* ---------- configuración ---------- */
+$('btnCfg').onclick = () => {
+  $('cfgKey').value = clave; $('cfgRec').checked = !clave || !!ls.get('tt_key', '');
+  $('cfgMsg').innerHTML = ''; actualizarPend(); ver('vCfg');
+};
+$('btnCfgOk').onclick = () => {
+  clave = $('cfgKey').value.trim();
+  if ($('cfgRec').checked) ls.set('tt_key', clave); else ls.del('tt_key');
+  $('cfgMsg').innerHTML = '<div class="msg ok">Guardado.</div>';
+};
+$('btnReenviar').onclick = async () => {
+  if (!clave){ $('cfgMsg').innerHTML = '<div class="msg err">Cargá la clave primero.</div>'; return; }
+  const r = await reenviar();
+  $('cfgMsg').innerHTML = `<div class="msg ${r.quedan ? 'err' : 'ok'}">Enviados: ${r.enviados} · Pendientes: ${r.quedan}</div>`;
+};
+$('btnCfgVolver').onclick = () => ver(S && S.running ? 'vCron' : 'vSetup');
+
+/* ---------- arranque ---------- */
+initSetup();
+if (!clave) $('btnCfg').click();
+</script>
+</body>
+</html>
