@@ -122,13 +122,14 @@ const OBJETIVO_OBS = '10-20';
 // tipo: 'O' = tiempo operario, 'M' = tiempo máquina
 const SERVICIOS = {
   alineacion: { nombre:'Alineación', subtareas:[
-    ['Posicionar vehículo en elevador','O'],
-    ['Colocar sensores / garras','O'],
-    ['Compensación (runout)','O'],
-    ['Medición inicial','M'],
-    ['Ajuste de convergencia / caída','O'],
-    ['Medición final e impresión','M'],
-    ['Retirar sensores y bajar vehículo','O']
+    ['Montar vehículo en el elevador','O'],
+    ['Colocar los 4 sensores en las cubiertas','O'],
+    ['Ingresar patente / cargar vehículo en el sistema','O'],
+    ['Procedimiento de la máquina (mover volante, etc.)','O'],
+    ['Colocar bloqueador de volante','O'],
+    ['Lectura de la máquina (combas y desvíos)','M'],
+    ['Ajustar hasta que quede todo OK','O'],
+    ['Quitar sensores y bajar el vehículo','O']
   ]},
   // Se mide UNA rueda por ciclo (repetir 4 veces por vehículo)
   balanceo: { nombre:'Balanceo (por rueda)', gramos:true, subtareas:[
