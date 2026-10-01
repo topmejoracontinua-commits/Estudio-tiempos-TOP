@@ -130,14 +130,22 @@ const SERVICIOS = {
     ['Medición final e impresión','M'],
     ['Retirar sensores y bajar vehículo','O']
   ]},
+  // Se mide UNA rueda por ciclo (repetir 4 veces por vehículo)
   balanceo: { nombre:'Balanceo (por rueda)', gramos:true, subtareas:[
-    ['Desmontar rueda del vehículo','O'],
-    ['Limpiar y retirar contrapesos viejos','O'],
-    ['Montar en balanceadora y cargar medidas','O'],
-    ['Giro y medición','M'],
-    ['Colocar contrapesos','O'],
-    ['Giro de verificación','M'],
-    ['Desmontar y montar en vehículo','O']
+    ['Desmontar neumático de la llanta','O'],
+    ['Cambiar pico (válvula)','O'],
+    ['Vaselina y montar neumático en la llanta','O'],
+    ['Montar rueda en balanceadora y ajustar','O'],
+    ['Medir llanta y cargar datos en la máquina','O'],
+    ['Giro de medición (máquina)','M'],
+    ['Colocar contrapesos (a medias)','O'],
+    ['Giro de verificación (máquina)','M'],
+    ['Ajustar si hace falta, verificar OK y retirar','O']
+  ]},
+  // Se mide UNA vez por vehículo (las 4 ruedas juntas)
+  balanceo_veh: { nombre:'Balanceo (ruedas del vehículo)', subtareas:[
+    ['Desarmar las 4 ruedas del vehículo','O'],
+    ['Montar las 4 ruedas en el vehículo','O']
   ]}
 };
 /* ================================================= */
